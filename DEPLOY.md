@@ -124,7 +124,7 @@ FRONTEND_URL=https://blotus.duckdns.org
 
 ### 프론트엔드 환경변수
 ```bash
-nano ~/Lotus/apps/frontend/.env.local
+nano ~/Lotus/lotus_web/.env.local
 ```
 
 ```env
@@ -155,7 +155,7 @@ docker compose up -d
 docker ps  # finance_db 컨테이너 확인
 
 # 4. 백엔드 설치 및 마이그레이션
-cd apps/backend
+cd lotus_api
 npm install
 npm run migration:run
 npm run seed
@@ -167,10 +167,10 @@ npm install
 npm run build
 
 # 6. PM2로 서비스 실행
-cd ~/Lotus/apps/backend
+cd ~/Lotus/lotus_api
 pm2 start dist/main.js --name lotus-backend
 
-cd ~/Lotus/apps/frontend
+cd ~/Lotus/lotus_web
 pm2 start npm --name lotus-frontend -- start
 
 # 7. PM2 재부팅 자동 시작 등록
@@ -291,7 +291,7 @@ docker exec -it finance_db psql -U finance_user -d finance_db
 
 ### 마이그레이션
 ```bash
-cd ~/Lotus/apps/backend
+cd ~/Lotus/lotus_api
 
 # 마이그레이션 실행
 npm run migration:run
@@ -305,7 +305,7 @@ npm run migration:show
 
 ### 시드 데이터 (증권사 목록 등 기초 데이터)
 ```bash
-cd ~/Lotus/apps/backend
+cd ~/Lotus/lotus_api
 npm run seed
 ```
 
@@ -320,7 +320,7 @@ cd ~/Lotus
 git pull origin main
 
 # 백엔드 업데이트
-cd apps/backend
+cd lotus_api
 npm install
 npm run migration:run   # 새 마이그레이션 있을 경우
 npm run build
@@ -363,5 +363,5 @@ sudo certbot renew --nginx
 ```
 
 ### 프론트엔드가 localhost:3001로 요청
-- `apps/frontend/.env.local`에 `NEXT_PUBLIC_BACKEND_URL=https://blotus.duckdns.org` 설정 확인
+- `lotus_web/.env.local`에 `NEXT_PUBLIC_BACKEND_URL=https://blotus.duckdns.org` 설정 확인
 - 설정 후 `npm run build` + `pm2 restart lotus-frontend` 필요

@@ -28,7 +28,7 @@ Thumbs.db
 *.swp
 
 # TypeORM migrations generated (keep manually created ones)
-# apps/backend/src/database/migrations/*.js
+# lotus_api/src/database/migrations/*.js
 
 # Test coverage
 coverage/

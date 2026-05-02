@@ -1,0 +1,6 @@
+[submodule "lotus_api"]
+	path = lotus_api
+	url = https://github.com/Jincchus/lotus-api.git
+[submodule "lotus_web"]
+	path = lotus_web
+	url = https://github.com/Jincchus/lotus-web.git

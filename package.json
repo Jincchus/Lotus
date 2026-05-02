@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "lotus_api",
+    "lotus_web"
   ],
   "scripts": {
-    "frontend": "npm run dev --workspace=apps/frontend",
-    "backend": "npm run start:dev --workspace=apps/backend",
+    "frontend": "npm run dev --workspace=lotus_web",
+    "backend": "npm run start:dev --workspace=lotus_api",
     "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
-    "build:frontend": "npm run build --workspace=apps/frontend",
-    "build:backend": "npm run build --workspace=apps/backend"
+    "build:frontend": "npm run build --workspace=lotus_web",
+    "build:backend": "npm run build --workspace=lotus_api"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
