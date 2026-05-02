@@ -111,9 +111,31 @@ export class LotsService {
   async update(id: string, userId: string, dto: UpdateLotDto): Promise<Lot> {
     const lot = await this.lotRepo.findOne({
       where: { id, user: { id: userId } },
+      relations: ['broker'],
     });
     if (!lot) throw new NotFoundException('Lot을 찾을 수 없습니다.');
+
+    if (dto.purchasePrice !== undefined) lot.purchasePrice = dto.purchasePrice;
+    if (dto.purchaseDate !== undefined) lot.purchaseDate = dto.purchaseDate;
     if (dto.memo !== undefined) lot.memo = dto.memo;
+
+    if (dto.initialQuantity !== undefined) {
+      const soldQty = Number(lot.initialQuantity) - Number(lot.remainingQuantity);
+      if (dto.initialQuantity < soldQty) {
+        throw new BadRequestException(
+          `초기 수량은 이미 매도된 수량(${soldQty})보다 작을 수 없습니다.`,
+        );
+      }
+      lot.initialQuantity = dto.initialQuantity;
+      lot.remainingQuantity = dto.initialQuantity - soldQty;
+    }
+
+    if (dto.brokerId !== undefined) {
+      const broker = await this.brokerRepo.findOneBy({ id: dto.brokerId });
+      if (!broker) throw new NotFoundException('증권사를 찾을 수 없습니다.');
+      lot.broker = broker;
+    }
+
     return this.lotRepo.save(lot);
   }
 
