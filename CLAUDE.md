@@ -296,21 +296,116 @@
 
 ## 13. TODO — 추후 수정·확장 예정 항목
 
-### 주식 API
-- [ ] **KIS Developers (한국투자증권) 공식 API로 교체**
-  - `StockPriceProvider` 인터페이스 → `KisStockPriceProvider`로 교체하면 됨
-  - 계좌 개설 후 API Key 발급 필요
+---
 
-### 기능 확장
-- [ ] 설정 페이지 구현 (기본전략, 계정관리, 환율기준)
-- [ ] 모바일 반응형 점검
-- [ ] 테스트 작성 (섹션 8 참고)
+### 🔴 우선순위 높음 (서비스 안정성에 직결)
+
+#### 1. 자동 로그인 (Refresh Token)
+- [ ] JWT Access Token: 1시간 / Refresh Token: 30일
+- [ ] `refresh_tokens` 테이블: `id`, `user_id`, `token(hashed)`, `expires_at`, `created_at`
+- [ ] 로그인 시 accessToken + refreshToken 동시 발급
+- [ ] access 만료 → `/auth/refresh` 호출 → 재발급 (프론트 axios interceptor)
+- [ ] 로그아웃 시 DB에서 refreshToken 삭제
+- [ ] 30일 미사용 또는 로그아웃 시 자동 로그인 해제
+
+#### 2. 환율 테이블 재설계 + 배치 (현재 구조 교체)
+- [ ] 테이블: `exchange_rates` 재설계
+  - `id`, `date` (unique, DATE), `usd_to_krw`, `created_at`
+  - 날짜 기준 1개만 존재 (unique constraint)
+  - 수동 수정 시 덮어쓰기 허용
+- [ ] 날짜 기준 조회 로직:
+  - 해당 날짜 있으면 사용
+  - 없으면 가장 가까운 이전 날짜 fallback
+- [ ] Cron 배치: 매일 00:05 오늘 환율 insert (이미 있으면 skip)
+- [ ] **핵심**: 이 구조 없으면 과거 Lot 수익률 계산 틀어짐
+
+#### 3. 관리자 페이지
+- [ ] `users` 테이블에 `role` 컬럼 추가 (`'user'` | `'admin'`, default `'user'`)
+- [ ] 시드: `chopoo2001@gmail.com` 으로 가입된 유저 → `role = 'admin'` 자동 부여
+- [ ] Google 로그인 시 이메일 일치하면 admin 유지 (신규 가입도 동일 처리)
+- [ ] 설정 페이지 내 관리자 탭 (role=admin 만 접근 가능)
+- [ ] 관리자 탭 기능:
+  - 에러 로그 조회 (error_logs 테이블)
+  - 기준환율 수동 입력/수정
+  - 사용자 목록 및 role 변경 권한 부여
+  - 종목 DB 보정 (종목명·시장 수동 수정)
+  - 공지사항 작성/관리 (대시보드 상단 전체 표시)
+  - 시스템 상태: API Rate Limit 현황, DB 연결 상태, 서버 CPU/메모리
+
+#### 4. 에러 로그 시스템
+- [ ] `error_logs` 테이블: `id`, `message`, `stack`, `user_id(nullable)`, `path`, `created_at`
+- [ ] NestJS 글로벌 ExceptionFilter에서 에러 발생 시 DB insert
+- [ ] Cron: 매일 30일 지난 로그 자동 삭제
+- [ ] 관리자 페이지에서 최근 로그 조회
+
+---
+
+### 🟡 우선순위 중간 (완성도 향상)
+
+#### 5. 입력 검증 강화
+- [ ] 음수 불가 필드 전수 확인: `purchasePrice`, `quantity`, `sellPrice`, `sellQuantity`, `exchangeRate`
+- [ ] 날짜 미래 금지: `purchaseDate`, `sellDate` (오늘 이전만 허용)
+- [ ] 수량 0 금지 (소수점은 허용)
+- [ ] 백엔드 DTO 레벨 + 프론트 UI 레벨 이중 검증
+
+#### 6. 캐싱 성능 개선
+- [ ] 주가 조회 캐싱: 30~60초 (현재 5분 → 단축 검토)
+- [ ] NestJS CacheModule (memory) 또는 Redis 도입 검토
+- [ ] Yahoo Finance API Rate Limit 초과 시 재시도 로직 (exponential backoff)
+- [ ] API 실패 fallback: 캐시 → 오류 표시 순서 명확화
+
+#### 7. DB 백업
+- [ ] 서버 cron: 매일 새벽 3시 `pg_dump` 실행
+- [ ] 백업 파일 7일 보관 후 자동 삭제
+- [ ] 백업 경로: `/home/server/backups/`
+- [ ] 스크립트 예시:
+  ```bash
+  pg_dump -U finance_user finance_db > /home/server/backups/$(date +%Y%m%d).sql
+  find /home/server/backups/ -mtime +7 -delete
+  ```
+
+#### 8. CSV / Excel 다운로드
+- [ ] Lot 목록 CSV export (전체 / 종목별)
+- [ ] SellHistory CSV export (기간 필터 포함)
+- [ ] 백엔드 `GET /lots/export`, `GET /sell-histories/export`
+- [ ] 프론트 다운로드 버튼 (포트폴리오, 매도 히스토리 페이지)
+
+#### 9. 공지사항
+- [ ] `notices` 테이블: `id`, `title`, `content`, `is_active`, `created_by`, `created_at`
+- [ ] 관리자만 작성/수정/삭제 가능
+- [ ] 대시보드 상단 활성 공지 표시 (is_active=true)
+- [ ] 프론트: 공지 배너 컴포넌트
+
+#### 10. PWA 설정
+- [ ] `next-pwa` 패키지 추가
+- [ ] `manifest.json`: 앱 이름 Lotus, 아이콘, 테마색 (#FF6B35)
+- [ ] 홈 화면 추가 설치 가능
+- [ ] 오프라인 fallback 페이지
+
+---
+
+### 🟢 데이터 정합성 (개발 중 상시 확인)
+
+#### 11. 트랜잭션 처리
+- [ ] 매도 실행 시: `lots.remaining_quantity` 차감 + `sell_histories` insert 트랜잭션 묶기
+- [ ] Lot 삭제 시: 관련 position_rules, sell_histories 연쇄 처리 확인
+- [ ] FK 제약 전수 확인 (ON DELETE 정책 명확화)
+
+---
+
+### ⚪ 나중에 (MVP 완료 후)
+
+- [ ] **KIS Developers (한국투자증권) API로 교체**
+  - `StockPriceProvider` 인터페이스 → `KisStockPriceProvider`
+  - 계좌 개설 후 API Key 발급 필요
+- [ ] 세금 계산기: 연간 실현 수익 250만원 초과 시 양도소득세 시뮬레이션
+- [ ] 배당금 트래커: Lot별 보유 기간 배당금 입력/조회
+- [ ] 포트폴리오 비중 차트 / 수익률 추이 차트
 - [ ] 브라우저 푸시 알림 (목표수익률 도달 시)
-- [ ] 포트폴리오 비중 차트
-- [ ] 수익률 추이 차트
 - [ ] 손절 기준 설정
-- [ ] 배당 수익 관리
-- [ ] 세금 계산 (양도소득세 기준)
+- [ ] 테스트 작성 (섹션 8 참고)
+- [ ] 모바일 반응형 점검
+- [ ] 설정 페이지 구현 (기본전략, 계정관리)
 
 ---
 
