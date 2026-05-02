@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포트폴리오 — Pulse</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; width: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-canvas);
+  color: var(--fg-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-warm-300); border-radius: 3px; }
+
+/* Layout */
+.layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--bg-sidebar);
+  display: flex; flex-direction: column;
+  height: 100vh; overflow: hidden;
+  transition: width 300ms var(--ease-out-expo), min-width 300ms var(--ease-out-expo);
+  position: relative; z-index: 10; flex-shrink: 0;
+}
+.sidebar.collapsed { width: 64px; min-width: 64px; }
+
+.sidebar-header {
+  padding: 20px 16px 12px;
+  border-bottom: 1px solid var(--border-sidebar);
+  flex-shrink: 0;
+}
+.logo { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--color-orange-500);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-text {
+  font-size: 16px; font-weight: 700;
+  color: var(--color-dark-100);
+  letter-spacing: -0.02em; white-space: nowrap;
+  transition: opacity 250ms, transform 250ms;
+}
+.sidebar.collapsed .logo-text { opacity: 0; transform: translateX(-8px); pointer-events: none; }
+
+.sidebar-nav {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 10px 8px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.nav-section { margin-top: 8px; }
+.nav-section-label {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--color-dark-500);
+  padding: 6px 10px 4px; white-space: nowrap; overflow: hidden;
+  transition: opacity 200ms;
+}
+.sidebar.collapsed .nav-section-label { opacity: 0; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  color: var(--color-dark-300); font-size: 13px; font-weight: 500;
+  white-space: nowrap; overflow: hidden;
+  transition: background 150ms, color 150ms; position: relative;
+}
+.nav-item:hover { background: var(--bg-sidebar-hover); color: var(--color-dark-200); }
+.nav-item.active { background: rgba(255,107,53,0.12); color: var(--color-orange-500); }
+.nav-item svg { flex-shrink: 0; }
+.nav-label { transition: opacity 250ms, transform 250ms; }
+.sidebar.collapsed .nav-label { opacity: 0; transform: translateX(-6px); pointer-events: none; }
+
+.sidebar-toggle {
+  position: absolute; right: -12px; top: 28px;
+  width: 24px; height: 24px;
+  background: var(--color-dark-700); border: 1px solid var(--color-dark-600);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--color-dark-300);
+  transition: background 150ms, color 150ms; z-index: 20;
+}
+.sidebar-toggle:hover { background: var(--color-dark-600); color: var(--color-dark-200); }
+
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border-sidebar);
+  display: flex; flex-direction: column; gap: 1px; flex-shrink: 0;
+}
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* Topbar */
+.topbar {
+  height: 56px; background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px; flex-shrink: 0;
+}
+.topbar-title { font-size: 16px; font-weight: 600; color: var(--fg-primary); flex: 1; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer;
+  transition: all 150ms var(--ease-out-expo);
+}
+.btn-primary { background: var(--color-orange-500); color: white; }
+.btn-primary:hover { background: var(--color-orange-600); box-shadow: 0 4px 12px rgba(255,107,53,0.3); transform: translateY(-1px); }
+.avatar {
+  width: 32px; height: 32px; background: var(--color-orange-500);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+}
+
+/* Content */
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; }
+
+/* Portfolio header */
+.portfolio-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+}
+.portfolio-header h1 {
+  font-size: 24px; font-weight: 700;
+  letter-spacing: -0.02em; color: var(--fg-primary);
+}
+.portfolio-header p { font-size: 13px; color: var(--fg-secondary); margin-top: 3px; }
+
+/* Summary cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.summary-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px; padding: 16px 18px;
+  box-shadow: var(--shadow-md);
+}
+.summary-card.accent { background: var(--color-orange-500); border-color: transparent; }
+.summary-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--fg-muted); margin-bottom: 8px;
+}
+.summary-card.accent .summary-label { color: rgba(255,255,255,0.65); }
+.summary-value {
+  font-family: var(--font-mono); font-size: 22px; font-weight: 500;
+  letter-spacing: -0.025em; color: var(--fg-primary); line-height: 1;
+}
+.summary-card.accent .summary-value { color: white; }
+.summary-delta {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  padding: 3px 7px; border-radius: 5px; margin-top: 6px;
+}
+.delta-pos { background: var(--color-green-50); color: var(--color-green-700); }
+.delta-neg { background: var(--color-red-50); color: var(--color-red-600); }
+.delta-neu { background: var(--bg-muted); color: var(--fg-secondary); }
+.summary-card.accent .summary-delta { background: rgba(255,255,255,0.2); color: white; }
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+}
+.filter-tabs {
+  display: flex; gap: 2px;
+  background: var(--bg-muted); border-radius: 9px; padding: 3px;
+}
+.filter-tab {
+  font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 7px; cursor: pointer;
+  color: var(--fg-secondary); border: none; background: transparent;
+  transition: all 150ms var(--ease-out-expo);
+}
+.filter-tab.active {
+  background: var(--bg-surface); color: var(--fg-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.filter-tab:not(.active):hover { color: var(--fg-primary); background: rgba(255,255,255,0.5); }
+
+.sort-select {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  color: var(--fg-primary); background: var(--bg-surface);
+  border: 1px solid var(--border-default); border-radius: 8px;
+  padding: 7px 32px 7px 12px;
+  appearance: none; cursor: pointer; outline: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23928A80' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: border-color 150ms;
+}
+.sort-select:hover { border-color: var(--border-strong); }
+
+/* Stock cards */
+.stock-list { display: flex; flex-direction: column; gap: 10px; }
+
+.stock-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px; padding: 18px 20px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 250ms var(--ease-out-expo), box-shadow 250ms var(--ease-out-expo), border-color 150ms;
+  display: flex; align-items: center; gap: 16px;
+  animation: cardIn 350ms var(--ease-out-expo) both;
+}
+.stock-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-strong);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stock-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; flex-shrink: 0;
+  letter-spacing: -0.03em;
+}
+.stock-icon.kr { background: rgba(59,130,246,0.1); color: var(--color-blue-600); }
+.stock-icon.us { background: rgba(255,107,53,0.1); color: var(--color-orange-600); }
+
+.stock-main { flex: 1; min-width: 0; }
+.stock-name-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+.stock-name { font-size: 15px; font-weight: 600; color: var(--fg-primary); }
+.market-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 5px; flex-shrink: 0;
+}
+.badge-kr { background: rgba(59,130,246,0.12); color: var(--color-blue-600); }
+.badge-us { background: rgba(255,107,53,0.12); color: var(--color-orange-600); }
+
+.stock-meta { font-size: 12px; color: var(--fg-secondary); display: flex; gap: 12px; }
+.stock-meta-item { display: flex; align-items: center; gap: 4px; }
+
+.stock-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.stock-valuation { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--fg-primary); }
+.stock-valuation-sub { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); }
+
+.return-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 500;
+  padding: 4px 10px; border-radius: 7px;
+}
+.return-pos { background: var(--color-green-50); color: var(--color-green-700); }
+.return-neg { background: var(--color-red-50); color: var(--color-red-600); }
+.return-zero { background: var(--bg-muted); color: var(--fg-secondary); }
+
+.stock-arrow { color: var(--fg-muted); opacity: 0.5; transition: opacity 150ms, transform 150ms; }
+.stock-card:hover .stock-arrow { opacity: 1; transform: translateX(2px); }
+
+.valuation-error { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--fg-muted); letter-spacing: 0.05em; }
+
+/* Skeleton */
+.skeleton-card {
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: 12px; padding: 18px 20px;
+  display: flex; align-items: center; gap: 16px;
+  animation: cardIn 350ms var(--ease-out-expo) both;
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skel {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #F4F1EC 25%, #E8E4DF 50%, #F4F1EC 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 64px 24px; text-align: center;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: 12px; box-shadow: var(--shadow-md);
+  animation: cardIn 400ms var(--ease-out-expo) both;
+}
+.empty-icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: var(--bg-muted); display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; color: var(--fg-muted);
+}
+.empty-title { font-size: 15px; font-weight: 600; color: var(--fg-primary); margin-bottom: 6px; }
+.empty-desc { font-size: 13px; color: var(--fg-secondary); margin-bottom: 20px; max-width: 300px; }
+
+/* Detail panel (slide-in) */
+.detail-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.25);
+  z-index: 100; backdrop-filter: blur(2px);
+  animation: fadeIn 200ms ease both;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.detail-panel {
+  position: fixed; right: 0; top: 0; bottom: 0;
+  width: 500px; background: var(--bg-surface);
+  box-shadow: var(--shadow-xl); overflow-y: auto;
+  animation: slideIn 300ms var(--ease-out-expo) both;
+  display: flex; flex-direction: column;
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.detail-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--border-default);
+  display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+  position: sticky; top: 0; background: var(--bg-surface); z-index: 2;
+}
+.detail-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--border-default); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--fg-secondary); margin-left: auto;
+  transition: all 150ms;
+}
+.detail-close:hover { background: var(--bg-muted); color: var(--fg-primary); }
+.detail-body { padding: 20px 24px; flex: 1; }
+
+.detail-section { margin-bottom: 24px; }
+.detail-section-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--fg-muted); margin-bottom: 10px;
+}
+.detail-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-stat {
+  background: var(--bg-canvas); border: 1px solid var(--border-muted);
+  border-radius: 8px; padding: 12px 14px;
+}
+.detail-stat-label { font-size: 11px; color: var(--fg-muted); margin-bottom: 4px; }
+.detail-stat-value { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--fg-primary); }
+
+/* Lot table */
+.lot-table { width: 100%; border-collapse: collapse; }
+.lot-table th {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--fg-muted); text-align: left;
+  padding: 8px 10px; background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-default);
+}
+.lot-table th:last-child { text-align: right; }
+.lot-table td {
+  padding: 11px 10px; font-size: 13px;
+  border-bottom: 1px solid var(--border-muted);
+  color: var(--fg-primary);
+}
+.lot-table tr:last-child td { border-bottom: none; }
+.lot-table td:last-child { text-align: right; }
+.lot-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--bg-muted); font-size: 11px; font-weight: 600;
+  color: var(--fg-secondary);
+}
+.td-mono { font-family: var(--font-mono); font-size: 12px; }
+.broker-chip {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 7px; border-radius: 5px;
+  background: var(--bg-muted); color: var(--fg-secondary);
+  white-space: nowrap;
+}
+
+/* Strategy rows */
+.strategy-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; background: var(--bg-canvas);
+  border: 1px solid var(--border-muted); border-radius: 8px;
+  margin-bottom: 6px;
+}
+.strategy-pct {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 500;
+  padding: 3px 8px; border-radius: 5px;
+  background: rgba(255,107,53,0.1); color: var(--color-orange-600);
+  flex-shrink: 0;
+}
+.strategy-desc { font-size: 12px; color: var(--fg-secondary); }
+
+/* Strategy status badges */
+.status-badge {
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 4px; flex-shrink: 0;
+}
+.status-done    { background: var(--color-green-50);      color: var(--color-green-700); }
+.status-ready   { background: rgba(255,107,53,0.12);       color: var(--color-orange-600); }
+.status-waiting { background: var(--bg-muted);             color: var(--fg-muted); }
+
+/* Tweaks */
+#tweaks-root { position: fixed; bottom: 24px; right: 24px; z-index: 200; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="tweaks-root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── Mock Data ── */
+const LOTS_DATA = {
+  samsung: [
+    { id: 'l1', buyDate: '2024-03-12', buyPrice: 62000, quantity: 100, remaining: 100, broker: '나무증권',
+      strategy: [{ targetReturn: 15, sellPct: 50, isExecuted: true }, { targetReturn: 30, sellPct: 50, isExecuted: false }] },
+    { id: 'l2', buyDate: '2024-07-08', buyPrice: 71000, quantity: 30,  remaining: 30,  broker: '토스증권',
+      strategy: [{ targetReturn: 20, sellPct: 100, isExecuted: false }] },
+    { id: 'l3', buyDate: '2025-01-15', buyPrice: 58500, quantity: 20,  remaining: 20,  broker: '나무증권',
+      strategy: [{ targetReturn: 25, sellPct: 60, isExecuted: false }] },
+  ],
+  apple: [
+    { id: 'l4', buyDate: '2024-05-20', buyPrice: 189.5, quantity: 3, remaining: 3, broker: '한국투자증권',
+      strategy: [{ targetReturn: 20, sellPct: 33, isExecuted: false }] },
+    { id: 'l5', buyDate: '2024-11-03', buyPrice: 224.3, quantity: 2, remaining: 2, broker: '한국투자증권',
+      strategy: [{ targetReturn: 15, sellPct: 100, isExecuted: false }] },
+  ],
+  nvidia: [
+    { id: 'l6', buyDate: '2024-02-14', buyPrice: 612.0, quantity: 2, remaining: 2, broker: '영웅문 (키움증권)',
+      strategy: [{ targetReturn: 40, sellPct: 50, isExecuted: true }, { targetReturn: 80, sellPct: 50, isExecuted: false }] },
+    { id: 'l7', buyDate: '2024-08-22', buyPrice: 116.0, quantity: 5, remaining: 5, broker: '영웅문 (키움증권)',
+      strategy: [{ targetReturn: 50, sellPct: 40, isExecuted: false }] },
+  ],
+  kakao: [
+    { id: 'l8', buyDate: '2024-04-10', buyPrice: 55000, quantity: 40, remaining: 40, broker: '카카오페이증권',
+      strategy: [{ targetReturn: 20, sellPct: 50, isExecuted: false }] },
+  ],
+  sk: [
+    { id: 'l9', buyDate: '2024-09-05', buyPrice: 174000, quantity: 10, remaining: 10, broker: '미래에셋증권',
+      strategy: [{ targetReturn: 15, sellPct: 100, isExecuted: false }] },
+  ],
+};
+
+const STOCKS = [
+  { id: 'samsung', name: '삼성전자', ticker: '005930', market: 'KR', currentPrice: 69650,  priceError: false, initials: '삼성' },
+  { id: 'apple',   name: 'Apple',    ticker: 'AAPL',   market: 'US', currentPrice: 212.4,  priceError: false, initials: 'AP' },
+  { id: 'nvidia',  name: 'NVIDIA',   ticker: 'NVDA',   market: 'US', currentPrice: null,   priceError: true,  initials: 'NV' },
+  { id: 'kakao',   name: '카카오',    ticker: '035720', market: 'KR', currentPrice: 47300,  priceError: false, initials: '카카' },
+  { id: 'sk',      name: 'SK하이닉스', ticker: '000660', market: 'KR', currentPrice: 198500, priceError: false, initials: 'SK' },
+];
+
+const USD_KRW = 1365;
+
+/* ── Helpers ── */
+function calcStockReturn(stock) {
+  const lots = LOTS_DATA[stock.id] || [];
+  if (!stock.currentPrice || stock.priceError) return null;
+  let totalCost = 0, totalRemaining = 0;
+  lots.forEach(lot => { totalCost += lot.buyPrice * lot.remaining; totalRemaining += lot.remaining; });
+  if (totalRemaining === 0) return null;
+  return ((stock.currentPrice - (totalCost / totalRemaining)) / (totalCost / totalRemaining)) * 100;
+}
+
+function calcValuation(stock) {
+  const lots = LOTS_DATA[stock.id] || [];
+  if (!stock.currentPrice || stock.priceError) return null;
+  const totalRemaining = lots.reduce((s, l) => s + l.remaining, 0);
+  if (stock.market === 'US') {
+    const usd = stock.currentPrice * totalRemaining;
+    return { krw: Math.round(usd * USD_KRW), usd };
+  }
+  return { krw: stock.currentPrice * totalRemaining, usd: null };
+}
+
+function calcUnrealizedProfit() {
+  let totalValue = 0, totalCost = 0;
+  STOCKS.forEach(stock => {
+    if (!stock.currentPrice || stock.priceError) return;
+    const lots = LOTS_DATA[stock.id] || [];
+    const rate = stock.market === 'US' ? USD_KRW : 1;
+    lots.forEach(lot => {
+      totalValue += stock.currentPrice * lot.remaining * rate;
+      totalCost  += lot.buyPrice * lot.remaining * rate;
+    });
+  });
+  const amount = totalValue - totalCost;
+  const rate = totalCost > 0 ? (amount / totalCost) * 100 : 0;
+  return { amount, rate };
+}
+
+function fmtKRW(v) {
+  if (v >= 100000000) return `₩${(v / 100000000).toFixed(1)}억`;
+  if (v >= 10000) return `₩${Math.round(v / 10000).toLocaleString()}만`;
+  return `₩${v.toLocaleString()}`;
+}
+function fmtKRWFull(v) { return `₩${Math.round(v).toLocaleString()}`; }
+function fmtUSD(v)     { return `$${v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`; }
+function fmtDate(d)    { return d.replace(/-/g, '.'); }
+
+/* ── Skeleton Card ── */
+function SkeletonCard({ delay = 0 }) {
+  return (
+    <div className="skeleton-card" style={{ animationDelay: `${delay}ms` }}>
+      <div className="skel" style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0 }}></div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div className="skel" style={{ width: 100, height: 16 }}></div>
+          <div className="skel" style={{ width: 32, height: 16 }}></div>
+        </div>
+        <div className="skel" style={{ width: 200, height: 13 }}></div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+        <div className="skel" style={{ width: 90, height: 18 }}></div>
+        <div className="skel" style={{ width: 70, height: 26, borderRadius: 7 }}></div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Stock Card ── */
+function StockCard({ stock, delay, onClick }) {
+  const lots = LOTS_DATA[stock.id] || [];
+  const totalRemaining = lots.reduce((s, l) => s + l.remaining, 0);
+  const valuation = calcValuation(stock);
+  const returnPct = calcStockReturn(stock);
+
+  return (
+    <div className="stock-card" style={{ animationDelay: `${delay}ms` }} onClick={() => onClick(stock)}>
+      <div className={`stock-icon ${stock.market.toLowerCase()}`}>{stock.initials}</div>
+      <div className="stock-main">
+        <div className="stock-name-row">
+          <span className="stock-name">{stock.name}</span>
+          <span className={`market-badge badge-${stock.market.toLowerCase()}`}>{stock.market}</span>
+        </div>
+        <div className="stock-meta">
+          <span className="stock-meta-item">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Lot {lots.length}개
+          </span>
+          <span className="stock-meta-item">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            보유 {totalRemaining.toLocaleString()}주
+          </span>
+        </div>
+      </div>
+      <div className="stock-right">
+        {valuation ? (
+          <>
+            <span className="stock-valuation">{fmtKRWFull(valuation.krw)}</span>
+            {valuation.usd && <span className="stock-valuation-sub">{fmtUSD(valuation.usd)}</span>}
+          </>
+        ) : (
+          <span className="valuation-error">— —</span>
+        )}
+        {returnPct !== null ? (
+          <span className={`return-badge ${returnPct > 0 ? 'return-pos' : returnPct < 0 ? 'return-neg' : 'return-zero'}`}>
+            {returnPct > 0 ? '▲' : returnPct < 0 ? '▼' : '—'}{' '}{Math.abs(returnPct).toFixed(1)}%
+          </span>
+        ) : (
+          <span className="return-badge return-zero">— —</span>
+        )}
+      </div>
+      <div className="stock-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  );
+}
+
+/* ── Detail Panel ── */
+function DetailPanel({ stock, onClose }) {
+  const lots = LOTS_DATA[stock.id] || [];
+  const totalRemaining = lots.reduce((s, l) => s + l.remaining, 0);
+  const valuation = calcValuation(stock);
+  const returnPct = calcStockReturn(stock);
+
+  let totalCost = 0;
+  lots.forEach(l => { totalCost += l.buyPrice * l.remaining; });
+  const avgBuy = totalRemaining > 0 ? totalCost / totalRemaining : 0;
+
+  const fmtPrice = (p) => stock.market === 'KR' ? `₩${p.toLocaleString()}` : `$${p.toFixed(2)}`;
+
+  return (
+    <>
+      <div className="detail-overlay" onClick={onClose}></div>
+      <div className="detail-panel">
+        <div className="detail-header">
+          <div className={`stock-icon ${stock.market.toLowerCase()}`} style={{ width: 40, height: 40, fontSize: 13 }}>
+            {stock.initials}
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 17 }}>{stock.name}</div>
+            <div style={{ fontSize: 12, color: 'var(--fg-secondary)', display: 'flex', gap: 8, alignItems: 'center', marginTop: 1 }}>
+              <span className={`market-badge badge-${stock.market.toLowerCase()}`}>{stock.market}</span>
+              <span>{stock.ticker}</span>
+            </div>
+          </div>
+          <button className="detail-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div className="detail-body">
+          {/* 종목 요약 */}
+          <div className="detail-section">
+            <div className="detail-section-title">종목 요약</div>
+            <div className="detail-stats-grid">
+              <div className="detail-stat">
+                <div className="detail-stat-label">현재가</div>
+                <div className="detail-stat-value">
+                  {stock.priceError
+                    ? <span style={{ color: 'var(--fg-muted)' }}>조회 실패</span>
+                    : fmtPrice(stock.currentPrice)}
+                </div>
+              </div>
+              <div className="detail-stat">
+                <div className="detail-stat-label">평균 매수가</div>
+                <div className="detail-stat-value">{fmtPrice(avgBuy)}</div>
+              </div>
+              <div className="detail-stat">
+                <div className="detail-stat-label">평가금액</div>
+                <div className="detail-stat-value">
+                  {valuation ? fmtKRWFull(valuation.krw) : <span style={{ color: 'var(--fg-muted)' }}>— —</span>}
+                </div>
+              </div>
+              <div className="detail-stat">
+                <div className="detail-stat-label">수익률</div>
+                <div className="detail-stat-value" style={{
+                  color: returnPct === null ? 'var(--fg-muted)'
+                       : returnPct >= 0    ? 'var(--color-green-600)'
+                       : 'var(--color-red-600)'
+                }}>
+                  {returnPct === null ? '—' : `${returnPct > 0 ? '+' : ''}${returnPct.toFixed(2)}%`}
+                </div>
+              </div>
+              <div className="detail-stat">
+                <div className="detail-stat-label">보유 수량</div>
+                <div className="detail-stat-value">{totalRemaining.toLocaleString()}주</div>
+              </div>
+              <div className="detail-stat">
+                <div className="detail-stat-label">Lot 수</div>
+                <div className="detail-stat-value">{lots.length}개</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Lot 내역 — 증권사 컬럼 포함 */}
+          <div className="detail-section">
+            <div className="detail-section-title">Lot 내역</div>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8, overflow: 'hidden' }}>
+              <table className="lot-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>매수일</th>
+                    <th>매수가</th>
+                    <th>잔여</th>
+                    <th>증권사</th>
+                    <th>수익률</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lots.map((lot, i) => {
+                    const lotReturn = stock.currentPrice && !stock.priceError
+                      ? ((stock.currentPrice - lot.buyPrice) / lot.buyPrice) * 100
+                      : null;
+                    return (
+                      <tr key={lot.id}>
+                        <td><span className="lot-num">{i + 1}</span></td>
+                        <td className="td-mono" style={{ color: 'var(--fg-secondary)', fontSize: 12 }}>{fmtDate(lot.buyDate)}</td>
+                        <td className="td-mono">{fmtPrice(lot.buyPrice)}</td>
+                        <td className="td-mono">{lot.remaining}주</td>
+                        <td><span className="broker-chip">{lot.broker}</span></td>
+                        <td>
+                          {lotReturn !== null ? (
+                            <span style={{
+                              fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500,
+                              color: lotReturn >= 0 ? 'var(--color-green-600)' : 'var(--color-red-600)'
+                            }}>
+                              {lotReturn > 0 ? '+' : ''}{lotReturn.toFixed(1)}%
+                            </span>
+                          ) : <span style={{ color: 'var(--fg-muted)' }}>— —</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 매도 전략 — 3단계 상태 뱃지 */}
+          <div className="detail-section">
+            <div className="detail-section-title">매도 전략</div>
+            {lots.map((lot, li) => (
+              <div key={lot.id} style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 5 }}>
+                  Lot {li + 1} · 매수가 {fmtPrice(lot.buyPrice)} · {lot.broker}
+                </div>
+                {lot.strategy.map((s, si) => {
+                  const targetPrice = lot.buyPrice * (1 + s.targetReturn / 100);
+                  const isAchieved  = stock.currentPrice && !stock.priceError && stock.currentPrice >= targetPrice;
+                  return (
+                    <div key={si} className="strategy-row">
+                      <span className="strategy-pct">+{s.targetReturn}%</span>
+                      <span className="strategy-desc">도달 시 {s.sellPct}% 매도</span>
+                      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {stock.currentPrice && !stock.priceError && (
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-secondary)' }}>
+                            목표 {fmtPrice(targetPrice)}
+                          </span>
+                        )}
+                        {s.isExecuted ? (
+                          <span className="status-badge status-done">실행 완료</span>
+                        ) : isAchieved ? (
+                          <span className="status-badge status-ready">매도 가능</span>
+                        ) : (
+                          <span className="status-badge status-waiting">대기 중</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── Main App ── */
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakToggle, TweakRadio, TweakColor } = window;
+
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "cardDensity": "comfortable",
+    "showSummary": true,
+    "accentColor": "#FF6B35",
+    "simulateLoading": false,
+    "simulateEmpty": false,
+    "simulatePriceError": false
+  }/*EDITMODE-END*/);
+
+  const [filter, setFilter]   = useState('전체');
+  const [sort,   setSort]     = useState('return');
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 1400);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (tweaks.simulateLoading) {
+      setLoading(true);
+      const t = setTimeout(() => setLoading(false), 99999);
+      return () => clearTimeout(t);
+    } else {
+      setLoading(false);
+    }
+  }, [tweaks.simulateLoading]);
+
+  const filterTabs = ['전체', '한국', '미국'];
+
+  let displayStocks = STOCKS.map(s => ({
+    ...s,
+    priceError:   tweaks.simulatePriceError ? true  : s.priceError,
+    currentPrice: tweaks.simulatePriceError ? null  : s.currentPrice,
+  }));
+
+  if (filter === '한국') displayStocks = displayStocks.filter(s => s.market === 'KR');
+  if (filter === '미국') displayStocks = displayStocks.filter(s => s.market === 'US');
+
+  displayStocks = [...displayStocks].sort((a, b) => {
+    if (sort === 'return') return (calcStockReturn(b) ?? -9999) - (calcStockReturn(a) ?? -9999);
+    if (sort === 'value')  return (calcValuation(b)?.krw ?? 0) - (calcValuation(a)?.krw ?? 0);
+    if (sort === 'name')   return a.name.localeCompare(b.name);
+    return 0;
+  });
+
+  const totalKRW   = STOCKS.reduce((s, stock) => s + (calcValuation(stock)?.krw ?? 0), 0);
+  const unrealized = calcUnrealizedProfit();
+  const posCount   = STOCKS.filter(s => (calcStockReturn(s) ?? 0) > 0).length;
+  const negCount   = STOCKS.filter(s => (calcStockReturn(s) ?? 0) < 0).length;
+  const totalLots  = Object.values(LOTS_DATA).reduce((a, b) => a + b.length, 0);
+
+  return (
+    <div className="layout">
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-toggle" onClick={() => setSidebarCollapsed(c => !c)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d={sidebarCollapsed ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'} />
+          </svg>
+        </div>
+        <div className="sidebar-header">
+          <div className="logo">
+            <div className="logo-mark">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <span className="logo-text">Pulse</span>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {/* 대시보드 */}
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span className="nav-label">대시보드</span>
+          </div>
+
+          {/* 포트폴리오 (active) */}
+          <div className="nav-item active">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span className="nav-label">포트폴리오</span>
+          </div>
+
+          {/* 종목 검색 */}
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span className="nav-label">종목 검색</span>
+          </div>
+
+          {/* 매도 히스토리 */}
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+            <span className="nav-label">매도 히스토리</span>
+          </div>
+
+          {/* 관심종목 */}
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span className="nav-label">관심종목</span>
+          </div>
+
+          <div className="nav-section">
+            <div className="nav-section-label">관리</div>
+            <div className="nav-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              <span className="nav-label">설정</span>
+            </div>
+          </div>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span className="nav-label">로그아웃</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="main">
+        <header className="topbar">
+          <span className="topbar-title">포트폴리오</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+              {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 기준
+            </span>
+            <button className="btn btn-primary" style={{ fontSize: 12, padding: '6px 12px', background: tweaks.accentColor }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              종목 추가
+            </button>
+            <div className="avatar" style={{ background: tweaks.accentColor }}>나</div>
+          </div>
+        </header>
+
+        <div className="content">
+          <div className="portfolio-header">
+            <div>
+              <h1>내 포트폴리오</h1>
+              <p>한국·미국 주식 Lot 기반 투자 관리</p>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
+          {tweaks.showSummary && !loading && !tweaks.simulateEmpty && (
+            <div className="summary-grid">
+              {/* 총 평가금액 */}
+              <div className="summary-card accent" style={{ background: tweaks.accentColor }}>
+                <div className="summary-label">총 평가금액</div>
+                <div className="summary-value">{fmtKRW(totalKRW)}</div>
+                <div className="summary-delta" style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
+                  {fmtUSD(Math.round(totalKRW / USD_KRW))} 환산
+                </div>
+              </div>
+
+              {/* 미실현 수익 */}
+              <div className="summary-card">
+                <div className="summary-label">미실현 수익</div>
+                <div className="summary-value" style={{
+                  color: unrealized.amount >= 0 ? 'var(--color-green-600)' : 'var(--color-red-600)'
+                }}>
+                  {unrealized.amount >= 0 ? '+' : ''}{fmtKRW(Math.abs(unrealized.amount))}
+                </div>
+                <div className={`summary-delta ${unrealized.rate >= 0 ? 'delta-pos' : 'delta-neg'}`}>
+                  {unrealized.rate >= 0 ? '↑' : '↓'} {Math.abs(unrealized.rate).toFixed(1)}%
+                </div>
+              </div>
+
+              {/* 보유 종목 */}
+              <div className="summary-card">
+                <div className="summary-label">보유 종목</div>
+                <div className="summary-value">{STOCKS.length}</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                  <span className="summary-delta delta-pos">▲ {posCount}개</span>
+                  <span className="summary-delta delta-neg">▼ {negCount}개</span>
+                </div>
+              </div>
+
+              {/* 총 Lot 수 */}
+              <div className="summary-card">
+                <div className="summary-label">총 Lot 수</div>
+                <div className="summary-value">{totalLots}</div>
+                <div className="summary-delta delta-neu">
+                  한국 {STOCKS.filter(s => s.market === 'KR').length} + 미국 {STOCKS.filter(s => s.market === 'US').length} 종목
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Toolbar */}
+          <div className="toolbar">
+            <div className="filter-tabs">
+              {filterTabs.map(tab => (
+                <button
+                  key={tab}
+                  className={`filter-tab ${filter === tab ? 'active' : ''}`}
+                  onClick={() => setFilter(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
+              <option value="return">수익률순</option>
+              <option value="value">평가금액순</option>
+              <option value="name">이름순</option>
+            </select>
+          </div>
+
+          {/* Stock list */}
+          <div className="stock-list">
+            {loading ? (
+              [0,80,160,240].map(d => <SkeletonCard key={d} delay={d} />)
+            ) : tweaks.simulateEmpty ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div className="empty-title">아직 보유 종목이 없습니다</div>
+                <div className="empty-desc">투자를 시작할 첫 번째 종목을 검색하고 매수 기록을 추가해보세요.</div>
+                <button className="btn btn-primary" style={{ background: tweaks.accentColor }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  종목 검색하기
+                </button>
+              </div>
+            ) : displayStocks.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </div>
+                <div className="empty-title">{filter} 시장 보유 종목 없음</div>
+                <div className="empty-desc">{filter} 시장에 보유한 종목이 없습니다.</div>
+              </div>
+            ) : (
+              displayStocks.map((stock, i) => (
+                <StockCard key={stock.id} stock={stock} delay={i * 60} onClick={setSelected} />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {selected && <DetailPanel stock={selected} onClose={() => setSelected(null)} />}
+
+      <TweaksPanel tweaks={tweaks} setTweak={setTweak}>
+        <TweakSection title="레이아웃">
+          <TweakRadio id="cardDensity" label="카드 밀도" options={['comfortable', 'compact']} tweaks={tweaks} setTweak={setTweak} />
+          <TweakToggle id="showSummary" label="요약 카드 표시" tweaks={tweaks} setTweak={setTweak} />
+        </TweakSection>
+        <TweakSection title="컬러">
+          <TweakColor id="accentColor" label="강조색" tweaks={tweaks} setTweak={setTweak} />
+        </TweakSection>
+        <TweakSection title="상태 시뮬레이션">
+          <TweakToggle id="simulateLoading"    label="로딩 중"          tweaks={tweaks} setTweak={setTweak} />
+          <TweakToggle id="simulateEmpty"      label="빈 포트폴리오"    tweaks={tweaks} setTweak={setTweak} />
+          <TweakToggle id="simulatePriceError" label="현재가 조회 실패" tweaks={tweaks} setTweak={setTweak} />
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

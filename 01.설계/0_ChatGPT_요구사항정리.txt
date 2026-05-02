@@ -1,0 +1,213 @@
+🚀 1. 프로젝트 개요
+📌 목표
+개인 주식 투자 관리 웹앱
+한국 + 미국 주식 지원
+회차별 매수/매도 전략 관리
+수익률 자동 계산
+모바일에서도 사용 + 앱 확장 가능
+✅ 2. 핵심 컨셉 (이 프로젝트의 본질)
+
+👉 단순 평균단가 앱 ❌
+
+👉 핵심은 이거 하나
+
+“매수 회차(Position) 단위로
+독립적인 수익률 + 매도 전략을 관리하는 시스템”
+🧠 3. 주요 요구사항
+👤 사용자
+회원가입 / 로그인
+개인 포트폴리오 관리
+📈 주식 기능
+종목 검색 (한국 / 미국)
+현재가 조회 (API 연동)
+매수 입력 (회차 단위)
+💰 투자 관리
+매수 금액 or 수량 입력
+회차별 수익률 계산
+총 포트폴리오 수익률 계산
+🎯 매도 전략 (핵심 기능)
+사용자 정의 가능
+
+예:
+
++20% → 30% 매도
++50% → 50% 매도
+⚙️ 추가 요구사항
+부분 매도 처리
+남은 금액 지속 추적
+추가 매수 시 기존 회차와 분리
+📊 대시보드
+총 투자금
+현재 평가금
+실현 수익
+미실현 수익
+총 수익률
+🔔 알림 (선택 → 추천)
+목표 수익률 도달 시 알림
+🧱 4. 전체 시스템 구조
+[Frontend (Web / Mobile)]
+        ↓
+[Backend API Server]
+        ↓
+[Database]
+        ↓
+[외부 주식 API + 환율 API]
+🧩 5. 기술 스택
+✅ 추천 스택 (확장성 기준)
+🎨 Frontend
+
+👉 Next.js
+
+React 기반
+반응형 + SEO + API 연동 좋음
+🧠 Backend
+
+👉 NestJS
+
+구조화된 서버 개발
+TypeScript 기반
+📱 App 확장
+
+👉 React Native
+
+🗄️ DB
+
+👉 PostgreSQL
+
+🔁 대안 (너한테 익숙한 스택)
+Backend: .NET 8
+Frontend: React
+App: .NET MAUI
+🌐 6. 외부 API
+📈 주식 가격
+미국:
+Finnhub
+Yahoo Finance
+한국:
+Korea Investment & Securities Open API
+💱 환율
+ExchangeRate-API
+🗄️ 7. DB 설계 (핵심)
+👤 User
+User
+- Id
+- Email
+- Password
+📊 Stock
+Stock
+- Id
+- Symbol
+- Name
+- Market (KR / US)
+💰 Position (매수 회차 핵심)
+Position
+- Id
+- UserId
+- StockId
+- BuyPrice
+- Amount
+- RemainingAmount
+- StrategyId
+- BuyDate
+🎯 Strategy (사용자 전략)
+Strategy
+- Id
+- UserId
+- Name
+📐 StrategyRule
+StrategyRule
+- Id
+- StrategyId
+- TargetProfitRate
+- SellPercent
+- OrderIndex
+⚠️ PositionRule (중요)
+
+👉 전략 복사본
+
+PositionRule
+- Id
+- PositionId
+- TargetProfitRate
+- SellPercent
+- IsExecuted
+💸 SellHistory
+SellHistory
+- Id
+- PositionId
+- SellPrice
+- SellAmount
+- SellDate
+- TriggerRate
+🧠 8. 핵심 로직
+📈 수익률 계산
+수익률 = (현재가 - 매수가) / 매수가
+💰 총 수익률
+총 투자금 = 모든 매수 합
+총 회수금 = 모든 매도 합
+현재 평가금 = 남은 금액 기준
+
+총 자산 = 회수금 + 평가금
+
+총 수익률 = (총 자산 - 투자금) / 투자금
+🎯 매도 트리거
+for each Position:
+  for each Rule:
+    if 수익률 >= 목표 && 미실행:
+        매도 실행
+        RemainingAmount 감소
+        SellHistory 기록
+        Rule 실행처리
+⚙️ 9. 중요한 설계 포인트
+🔥 1. 회차 독립 구조
+평균단가 ❌
+Position 단위 ⭕
+🔥 2. 전략 “복사 저장”
+Strategy 변경 영향 X
+🔥 3. RemainingAmount 관리
+매도 후 상태 유지 필수
+🔥 4. 시장 구분 (KR / US)
+API 분기
+환율 계산
+📱 10. UX 설계
+메인 화면
+총 자산
+총 수익률
+오늘 변동
+종목 화면
+회차 리스트
+각 수익률
+매도 상태
+전략 설정 화면
+수익률 / 매도 비율 설정
+🔔 11. 확장 기능
+수익률 그래프
+알림 (목표 도달)
+거래 타임라인
+전략 템플릿
+태그 (단타/장투)
+종목 성과 랭킹
+🚀 12. 개발 단계 (로드맵)
+🟢 1단계 (MVP)
+회원가입 / 로그인
+종목 추가
+매수 입력
+수익률 계산
+🟡 2단계 (핵심 기능)
+매도 전략
+부분 매도
+총 수익률
+🔵 3단계 (완성)
+그래프
+알림
+전략 템플릿
+🔥 최종 한 줄 정리
+“회차 기반 투자 관리 + 사용자 정의 매도 전략 + 전체 수익 추적 시스템”
+👉 다음 단계
+
+이제 선택만 하면 된다
+
+스택 확정
+DB 실제 생성
+API 설계
+코드 시작

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.npm
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# TypeORM migrations generated (keep manually created ones)
+# apps/backend/src/database/migrations/*.js
+
+# Test coverage
+coverage/
+
+# Internal work logs (AI session notes)
+ignore/
+
+# AI session data
+.claude/

@@ -1,0 +1,38 @@
+import {
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
+import { Market } from '../../stocks/stock.entity';
+
+export class CreateLotDto {
+  @IsString()
+  @MinLength(1)
+  symbol: string;
+
+  @IsEnum(Market)
+  market: Market;
+
+  @IsUUID()
+  brokerId: string;
+
+  @IsNumber()
+  @IsPositive()
+  purchasePrice: number;
+
+  @IsDateString()
+  purchaseDate: string;
+
+  @IsNumber()
+  @IsPositive()
+  quantity: number;
+
+  @IsOptional()
+  @IsString()
+  memo?: string;
+}

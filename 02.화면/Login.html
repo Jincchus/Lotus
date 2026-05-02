@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 — Pulse</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; width: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-canvas);
+  color: var(--fg-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Full-page centered layout */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background decoration */
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+.bg-blob-1 {
+  width: 400px; height: 400px;
+  background: rgba(255, 107, 53, 0.08);
+  top: -100px; right: -100px;
+}
+.bg-blob-2 {
+  width: 300px; height: 300px;
+  background: rgba(251, 191, 36, 0.06);
+  bottom: -80px; left: -80px;
+}
+
+/* Card */
+.login-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 20px;
+  padding: 40px 44px;
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  animation: cardIn 500ms var(--ease-out-expo) both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Logo */
+.login-logo {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; margin-bottom: 28px;
+}
+.login-logo-mark {
+  width: 44px; height: 44px;
+  background: var(--color-orange-500);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(255,107,53,0.3);
+}
+.login-logo-text {
+  font-size: 28px; font-weight: 800;
+  color: var(--fg-primary);
+  letter-spacing: -0.04em;
+}
+
+/* Heading */
+.login-heading {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.login-title {
+  font-size: 22px; font-weight: 700;
+  color: var(--fg-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.login-subtitle {
+  font-size: 14px;
+  color: var(--fg-secondary);
+  line-height: 1.5;
+}
+
+/* Divider */
+.login-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 28px 0;
+}
+
+/* Feature list */
+.features {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 28px;
+}
+.feature-item {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--fg-secondary);
+}
+.feature-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--bg-muted);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-orange-500); flex-shrink: 0;
+}
+
+/* Google login button */
+.google-btn {
+  width: 100%; height: 48px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--fg-primary); color: white;
+  border: none; border-radius: 12px; cursor: pointer;
+  font-family: var(--font-sans); font-size: 15px; font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: background 150ms, box-shadow 150ms, transform 150ms;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.google-btn:hover {
+  background: #111;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  transform: translateY(-1px);
+}
+.google-btn:active { transform: translateY(0); }
+
+/* Google logo */
+.google-logo {
+  width: 20px; height: 20px;
+  background: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* State: signing in */
+.signing-in-row {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px;
+  background: var(--bg-canvas);
+  border-radius: 12px;
+  border: 1px solid var(--border-default);
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border-default);
+  border-top-color: var(--color-orange-500);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error state */
+.login-error {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-red-50);
+  border: 1px solid var(--color-red-400);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  animation: shake 400ms var(--ease-out-expo);
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.login-error-text { font-size: 13px; color: var(--color-red-600); }
+
+/* Footer */
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.6;
+}
+.login-footer a { color: var(--fg-secondary); text-decoration: underline; }
+
+#tweaks-root { position: fixed; bottom: 24px; right: 24px; z-index: 200; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="tweaks-root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakRadio } = window;
+
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "state": "idle"
+  }/*EDITMODE-END*/);
+
+  const [state, setState] = useState('idle'); // idle | signing-in | error
+
+  function handleLogin() {
+    if (tweaks.state === 'signing-in') return;
+    setState('signing-in');
+    setTimeout(() => {
+      if (tweaks.state === 'error') {
+        setState('error');
+      } else {
+        setState('success');
+        setTimeout(() => alert('로그인 성공! → 대시보드로 이동'), 300);
+      }
+    }, 1800);
+  }
+
+  const displayState = tweaks.state !== 'idle' ? tweaks.state : state;
+
+  return (
+    <div className="login-page">
+      <div className="bg-blob bg-blob-1" />
+      <div className="bg-blob bg-blob-2" />
+
+      <div className="login-card">
+        {/* Logo */}
+        <div className="login-logo">
+          <div className="login-logo-mark">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <span className="login-logo-text">Pulse</span>
+        </div>
+
+        {/* Heading */}
+        <div className="login-heading">
+          <div className="login-title">투자 포트폴리오 관리</div>
+          <div className="login-subtitle">
+            한국·미국 주식을 Lot 단위로 독립 관리하고<br />
+            전략적 매도를 통해 수익을 극대화하세요.
+          </div>
+        </div>
+
+        <div className="login-divider" />
+
+        {/* Features */}
+        <div className="features">
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            Lot 단위 독립 수익률 계산
+          </div>
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            </div>
+            단계별 부분 매도 전략 설정
+          </div>
+          <div className="feature-item">
+            <div className="feature-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            한국·미국 KRW 통합 환산 관리
+          </div>
+        </div>
+
+        {/* Error message */}
+        {displayState === 'error' && (
+          <div className="login-error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-red-500)" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}>
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <span className="login-error-text">
+              Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.
+            </span>
+          </div>
+        )}
+
+        {/* Login button */}
+        {displayState === 'signing-in' ? (
+          <div className="signing-in-row">
+            <div className="spinner" />
+            <span style={{ fontSize: 14, color: 'var(--fg-secondary)' }}>Google 계정으로 로그인 중…</span>
+          </div>
+        ) : (
+          <button className="google-btn" onClick={handleLogin}>
+            <div className="google-logo">
+              <svg width="14" height="14" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            </div>
+            Google로 로그인
+          </button>
+        )}
+
+        {/* Footer */}
+        <div className="login-footer">
+          로그인 시 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의하게 됩니다.<br />
+          개인 투자 관리 전용 서비스입니다.
+        </div>
+      </div>
+
+      <TweaksPanel tweaks={tweaks} setTweak={setTweak}>
+        <TweakSection title="상태 시뮬레이션">
+          <TweakRadio id="state" label="로그인 상태" options={['idle', 'signing-in', 'error']} tweaks={tweaks} setTweak={setTweak} />
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

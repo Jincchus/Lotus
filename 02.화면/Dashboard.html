@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대시보드 — Pulse</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; width: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-canvas);
+  color: var(--fg-primary);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-warm-300); border-radius: 3px; }
+
+/* Layout */
+.layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--bg-sidebar);
+  display: flex; flex-direction: column;
+  height: 100vh; overflow: hidden;
+  transition: width 300ms var(--ease-out-expo), min-width 300ms var(--ease-out-expo);
+  position: relative; z-index: 10; flex-shrink: 0;
+}
+.sidebar.collapsed { width: 64px; min-width: 64px; }
+
+.sidebar-header {
+  padding: 20px 16px 12px;
+  border-bottom: 1px solid var(--border-sidebar);
+  flex-shrink: 0;
+}
+.logo { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--color-orange-500);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-text {
+  font-size: 16px; font-weight: 700;
+  color: var(--color-dark-100);
+  letter-spacing: -0.02em; white-space: nowrap;
+  transition: opacity 250ms, transform 250ms;
+}
+.sidebar.collapsed .logo-text { opacity: 0; transform: translateX(-8px); pointer-events: none; }
+
+.sidebar-nav {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 10px 8px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.nav-section { margin-top: 8px; }
+.nav-section-label {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--color-dark-500);
+  padding: 6px 10px 4px; white-space: nowrap; overflow: hidden;
+  transition: opacity 200ms;
+}
+.sidebar.collapsed .nav-section-label { opacity: 0; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  color: var(--color-dark-300); font-size: 13px; font-weight: 500;
+  white-space: nowrap; overflow: hidden;
+  transition: background 150ms, color 150ms; position: relative;
+}
+.nav-item:hover { background: var(--bg-sidebar-hover); color: var(--color-dark-200); }
+.nav-item.active { background: rgba(255,107,53,0.12); color: var(--color-orange-500); }
+.nav-item svg { flex-shrink: 0; }
+.nav-label { transition: opacity 250ms, transform 250ms; }
+.sidebar.collapsed .nav-label { opacity: 0; transform: translateX(-6px); pointer-events: none; }
+
+.sidebar-toggle {
+  position: absolute; right: -12px; top: 28px;
+  width: 24px; height: 24px;
+  background: var(--color-dark-700); border: 1px solid var(--color-dark-600);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--color-dark-300);
+  transition: background 150ms, color 150ms; z-index: 20;
+}
+.sidebar-toggle:hover { background: var(--color-dark-600); color: var(--color-dark-200); }
+
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border-sidebar);
+  display: flex; flex-direction: column; gap: 1px; flex-shrink: 0;
+}
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+/* Topbar */
+.topbar {
+  height: 56px; background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px; flex-shrink: 0;
+}
+.topbar-title { font-size: 16px; font-weight: 600; color: var(--fg-primary); flex: 1; }
+.avatar {
+  width: 32px; height: 32px; background: var(--color-orange-500);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer;
+  transition: all 150ms var(--ease-out-expo);
+}
+.btn-primary { background: var(--color-orange-500); color: white; }
+.btn-primary:hover { background: var(--color-orange-600); box-shadow: 0 4px 12px rgba(255,107,53,0.3); transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent; color: var(--fg-secondary);
+  border: 1px solid var(--border-default);
+}
+.btn-ghost:hover { background: var(--bg-muted); color: var(--fg-primary); border-color: var(--border-strong); }
+
+/* Content */
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; }
+
+/* Dashboard header */
+.dash-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+}
+.dash-greeting { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.dash-date { font-size: 13px; color: var(--fg-secondary); margin-top: 3px; }
+
+/* KPI cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px; padding: 18px 20px;
+  box-shadow: var(--shadow-md);
+  position: relative; overflow: hidden;
+}
+.kpi-card.accent {
+  background: var(--color-orange-500);
+  border-color: transparent;
+}
+.kpi-card.accent-soft {
+  background: rgba(255,107,53,0.05);
+  border-color: rgba(255,107,53,0.2);
+}
+.kpi-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--fg-muted); margin-bottom: 10px;
+}
+.kpi-card.accent .kpi-label { color: rgba(255,255,255,0.65); }
+.kpi-value {
+  font-family: var(--font-mono); font-size: 24px; font-weight: 500;
+  letter-spacing: -0.025em; color: var(--fg-primary); line-height: 1;
+}
+.kpi-card.accent .kpi-value { color: white; }
+.kpi-sub {
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--fg-muted); margin-top: 5px;
+}
+.kpi-card.accent .kpi-sub { color: rgba(255,255,255,0.6); }
+.kpi-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  padding: 3px 8px; border-radius: 5px; margin-top: 8px;
+}
+.kpi-badge.pos { background: var(--color-green-50); color: var(--color-green-700); }
+.kpi-badge.neg { background: var(--color-red-50);   color: var(--color-red-600); }
+.kpi-badge.neu { background: var(--bg-muted);        color: var(--fg-secondary); }
+.kpi-card.accent .kpi-badge { background: rgba(255,255,255,0.2); color: white; }
+
+/* Two-column section grid */
+.section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 900px) { .section-grid { grid-template-columns: 1fr; } }
+
+.section-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-default);
+}
+.section-title {
+  font-size: 13px; font-weight: 600; color: var(--fg-primary);
+}
+.section-link {
+  font-size: 12px; color: var(--color-orange-500); cursor: pointer;
+  font-weight: 500;
+}
+.section-link:hover { text-decoration: underline; }
+.section-body { padding: 0; }
+
+/* Holdings list */
+.holding-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-muted);
+  transition: background 150ms;
+  cursor: pointer;
+}
+.holding-row:last-child { border-bottom: none; }
+.holding-row:hover { background: var(--bg-canvas); }
+.holding-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.holding-icon.kr { background: rgba(59,130,246,0.1); color: var(--color-blue-600); }
+.holding-icon.us { background: rgba(255,107,53,0.1); color: var(--color-orange-600); }
+.holding-name { font-size: 13px; font-weight: 600; color: var(--fg-primary); }
+.holding-meta { font-size: 11px; color: var(--fg-secondary); margin-top: 1px; }
+.holding-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+.holding-value { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--fg-primary); }
+.holding-return {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+  margin-top: 2px;
+}
+.ret-pos { color: var(--color-green-600); }
+.ret-neg { color: var(--color-red-600); }
+.ret-neu { color: var(--fg-muted); }
+
+/* Sell history list */
+.sell-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-muted);
+}
+.sell-row:last-child { border-bottom: none; }
+.sell-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--color-green-50);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--color-green-600);
+}
+.sell-name { font-size: 13px; font-weight: 600; color: var(--fg-primary); }
+.sell-meta { font-size: 11px; color: var(--fg-secondary); margin-top: 1px; }
+.sell-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+.sell-amount { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--color-green-600); }
+.sell-date { font-size: 11px; color: var(--fg-muted); margin-top: 2px; }
+
+/* Alert / actionable rows */
+.alert-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border-muted);
+}
+.alert-row:last-child { border-bottom: none; }
+.alert-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-orange-500); flex-shrink: 0;
+}
+.alert-text { font-size: 13px; color: var(--fg-primary); flex: 1; }
+.alert-text strong { font-weight: 600; }
+.alert-text span { color: var(--fg-secondary); }
+.alert-return {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+  color: var(--color-green-600); flex-shrink: 0;
+}
+
+/* Exchange rate widget */
+.fx-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+}
+.fx-pair { font-size: 12px; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.fx-value { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--fg-primary); }
+.fx-change { font-family: var(--font-mono); font-size: 11px; }
+.fx-meta { font-size: 11px; color: var(--fg-muted); padding: 0 18px 14px; }
+
+/* Skeleton */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skel {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #F4F1EC 25%, #E8E4DF 50%, #F4F1EC 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* Tweaks */
+#tweaks-root { position: fixed; bottom: 24px; right: 24px; z-index: 200; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="tweaks-root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ── Mock Data ── */
+const USD_KRW = 1365;
+const TODAY = '2025-05-01';
+
+const HOLDINGS = [
+  { id: 'samsung', name: '삼성전자',  ticker: '005930', market: 'KR', initials: '삼성',
+    currentPrice: 69650,  lots: 3, remaining: 150, invested: 9900000,  priceError: false },
+  { id: 'apple',   name: 'Apple',     ticker: 'AAPL',   market: 'US', initials: 'AP',
+    currentPrice: 212.4,  lots: 2, remaining: 5,   invested: 1893250,  priceError: false },
+  { id: 'nvidia',  name: 'NVIDIA',    ticker: 'NVDA',   market: 'US', initials: 'NV',
+    currentPrice: null,   lots: 2, remaining: 7,   invested: 1804000,  priceError: true  },
+  { id: 'kakao',   name: '카카오',    ticker: '035720', market: 'KR', initials: '카카',
+    currentPrice: 47300,  lots: 1, remaining: 40,  invested: 2200000,  priceError: false },
+  { id: 'sk',      name: 'SK하이닉스', ticker: '000660', market: 'KR', initials: 'SK',
+    currentPrice: 198500, lots: 1, remaining: 10,  invested: 1740000,  priceError: false },
+];
+
+const RECENT_SELLS = [
+  { id: 's1', stock: '삼성전자', ticker: '005930', market: 'KR',   date: '2025-04-28', qty: 50,  sellPrice: 68000, buyPrice: 62000,  realizedProfit: 300000 },
+  { id: 's2', stock: 'Apple',   ticker: 'AAPL',   market: 'US',   date: '2025-04-15', qty: 1,   sellPrice: 220.5, buyPrice: 189.5,  realizedProfit: 42323  },
+  { id: 's3', stock: '카카오',  ticker: '035720', market: 'KR',   date: '2025-03-20', qty: 20,  sellPrice: 52000, buyPrice: 55000,  realizedProfit: -60000 },
+];
+
+const ALERTS = [
+  { stock: 'NVIDIA',   ticker: 'NVDA',   target: '+40%', achieved: false, note: '목표가 $856.8 도달 대기' },
+  { stock: '삼성전자', ticker: '005930', target: '+30%', achieved: true,  note: '목표가 ₩80,600 달성 — 매도 가능' },
+  { stock: 'Apple',    ticker: 'AAPL',   target: '+20%', achieved: false, note: '목표가 $227.4 도달 대기' },
+];
+
+/* ── Helpers ── */
+function fmtKRW(v) {
+  if (v >= 100000000) return `₩${(v / 100000000).toFixed(1)}억`;
+  if (v >= 10000) return `₩${Math.round(v / 10000).toLocaleString()}만`;
+  return `₩${v.toLocaleString()}`;
+}
+function fmtKRWFull(v) { return `₩${Math.round(v).toLocaleString()}`; }
+function fmtUSD(v) { return `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`; }
+function fmtDate(d) { return d.replace(/-/g, '.'); }
+
+function calcHoldingValue(h) {
+  if (!h.currentPrice || h.priceError) return null;
+  const rate = h.market === 'US' ? USD_KRW : 1;
+  return h.currentPrice * h.remaining * rate;
+}
+
+function calcReturnPct(h) {
+  const value = calcHoldingValue(h);
+  if (value === null) return null;
+  return ((value - h.invested) / h.invested) * 100;
+}
+
+function calcPortfolioSummary() {
+  let totalValue = 0, totalInvested = 0, realizedProfit = 0;
+  HOLDINGS.forEach(h => {
+    totalInvested += h.invested;
+    const v = calcHoldingValue(h);
+    if (v !== null) totalValue += v;
+    else totalValue += h.invested; // use cost as fallback
+  });
+  RECENT_SELLS.forEach(s => { realizedProfit += s.realizedProfit; });
+  const unrealizedProfit = totalValue - totalInvested;
+  const totalReturn = totalInvested > 0 ? ((unrealizedProfit + realizedProfit) / totalInvested) * 100 : 0;
+  return { totalValue, totalInvested, unrealizedProfit, realizedProfit, totalReturn };
+}
+
+/* ── App ── */
+function App() {
+  const { useTweaks, TweaksPanel, TweakSection, TweakToggle } = window;
+
+  const [tweaks, setTweak] = useTweaks(/*EDITMODE-BEGIN*/{
+    "showKPI": true,
+    "accentColor": "#FF6B35",
+    "simulateLoading": false
+  }/*EDITMODE-END*/);
+
+  const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (tweaks.simulateLoading) { setLoading(true); }
+    else { setLoading(false); }
+  }, [tweaks.simulateLoading]);
+
+  const summary = calcPortfolioSummary();
+  const holdingsSorted = [...HOLDINGS].sort((a, b) => (calcHoldingValue(b) ?? 0) - (calcHoldingValue(a) ?? 0));
+  const activeAlerts = ALERTS.filter(a => a.achieved);
+
+  const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+  return (
+    <div className="layout">
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-toggle" onClick={() => setSidebarCollapsed(c => !c)}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d={sidebarCollapsed ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'} />
+          </svg>
+        </div>
+        <div className="sidebar-header">
+          <div className="logo">
+            <div className="logo-mark">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <span className="logo-text">Pulse</span>
+          </div>
+        </div>
+        <nav className="sidebar-nav">
+          <div className="nav-item active">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span className="nav-label">대시보드</span>
+          </div>
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span className="nav-label">포트폴리오</span>
+          </div>
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span className="nav-label">종목 검색</span>
+          </div>
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+            <span className="nav-label">매도 히스토리</span>
+          </div>
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span className="nav-label">관심종목</span>
+          </div>
+          <div className="nav-section">
+            <div className="nav-section-label">관리</div>
+            <div className="nav-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              <span className="nav-label">설정</span>
+            </div>
+          </div>
+        </nav>
+        <div className="sidebar-footer">
+          <div className="nav-item">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span className="nav-label">로그아웃</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="main">
+        <header className="topbar">
+          <span className="topbar-title">대시보드</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)' }}>
+              USD/KRW {USD_KRW.toLocaleString()}
+            </span>
+            <button className="btn btn-primary" style={{ fontSize: 12, padding: '6px 12px', background: tweaks.accentColor }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              종목 추가
+            </button>
+            <div className="avatar" style={{ background: tweaks.accentColor }}>나</div>
+          </div>
+        </header>
+
+        <div className="content">
+          {/* Header */}
+          <div className="dash-header">
+            <div>
+              <div className="dash-greeting">안녕하세요 👋</div>
+              <div className="dash-date">{today} 기준 · KRW 통합 기준</div>
+            </div>
+          </div>
+
+          {/* KPI Cards */}
+          {tweaks.showKPI && (
+            <div className="kpi-grid">
+              {/* 총 평가금액 */}
+              <div className="kpi-card accent" style={{ background: tweaks.accentColor }}>
+                <div className="kpi-label">총 평가금액</div>
+                {loading ? <div className="skel" style={{ height: 28, width: 140 }} /> : (
+                  <>
+                    <div className="kpi-value">{fmtKRW(summary.totalValue)}</div>
+                    <div className="kpi-sub">{fmtUSD(Math.round(summary.totalValue / USD_KRW))} 환산</div>
+                  </>
+                )}
+              </div>
+
+              {/* 총 투자원금 */}
+              <div className="kpi-card">
+                <div className="kpi-label">총 투자원금</div>
+                {loading ? <div className="skel" style={{ height: 28, width: 120 }} /> : (
+                  <>
+                    <div className="kpi-value">{fmtKRW(summary.totalInvested)}</div>
+                    <div className="kpi-badge neu">기준 원금</div>
+                  </>
+                )}
+              </div>
+
+              {/* 미실현 수익 */}
+              <div className="kpi-card">
+                <div className="kpi-label">미실현 수익</div>
+                {loading ? <div className="skel" style={{ height: 28, width: 130 }} /> : (
+                  <>
+                    <div className="kpi-value" style={{
+                      color: summary.unrealizedProfit >= 0 ? 'var(--color-green-600)' : 'var(--color-red-600)'
+                    }}>
+                      {summary.unrealizedProfit >= 0 ? '+' : ''}{fmtKRW(Math.abs(summary.unrealizedProfit))}
+                    </div>
+                    <div className={`kpi-badge ${summary.unrealizedProfit >= 0 ? 'pos' : 'neg'}`}>
+                      {summary.unrealizedProfit >= 0 ? '↑' : '↓'}{Math.abs(((summary.totalValue - summary.totalInvested) / summary.totalInvested) * 100).toFixed(1)}%
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 실현 수익 */}
+              <div className="kpi-card">
+                <div className="kpi-label">실현 수익</div>
+                {loading ? <div className="skel" style={{ height: 28, width: 100 }} /> : (
+                  <>
+                    <div className="kpi-value" style={{
+                      color: summary.realizedProfit >= 0 ? 'var(--color-green-600)' : 'var(--color-red-600)'
+                    }}>
+                      {summary.realizedProfit >= 0 ? '+' : ''}{fmtKRW(Math.abs(summary.realizedProfit))}
+                    </div>
+                    <div className="kpi-badge neu">매도 확정</div>
+                  </>
+                )}
+              </div>
+
+              {/* 전체 수익률 */}
+              <div className="kpi-card accent-soft">
+                <div className="kpi-label">전체 수익률</div>
+                {loading ? <div className="skel" style={{ height: 28, width: 90 }} /> : (
+                  <>
+                    <div className="kpi-value" style={{
+                      fontSize: 28,
+                      color: summary.totalReturn >= 0 ? 'var(--color-orange-500)' : 'var(--color-red-600)'
+                    }}>
+                      {summary.totalReturn >= 0 ? '+' : ''}{summary.totalReturn.toFixed(2)}%
+                    </div>
+                    <div className="kpi-sub" style={{ color: 'var(--fg-secondary)', marginTop: 4 }}>
+                      실현 + 미실현 합산
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Two-column sections */}
+          <div className="section-grid">
+            {/* Holdings summary */}
+            <div className="section-card">
+              <div className="section-header">
+                <span className="section-title">보유 종목 현황</span>
+                <span className="section-link">전체 보기 →</span>
+              </div>
+              <div className="section-body">
+                {loading
+                  ? [0,1,2].map(i => (
+                      <div key={i} className="holding-row" style={{ gap: 12 }}>
+                        <div className="skel" style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div className="skel" style={{ height: 13, width: 100 }} />
+                          <div className="skel" style={{ height: 11, width: 70 }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                          <div className="skel" style={{ height: 13, width: 80 }} />
+                          <div className="skel" style={{ height: 11, width: 50 }} />
+                        </div>
+                      </div>
+                    ))
+                  : holdingsSorted.map(h => {
+                      const val = calcHoldingValue(h);
+                      const ret = calcReturnPct(h);
+                      return (
+                        <div key={h.id} className="holding-row">
+                          <div className={`holding-icon ${h.market.toLowerCase()}`}>{h.initials}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="holding-name">{h.name}</div>
+                            <div className="holding-meta">{h.ticker} · Lot {h.lots}개 · {h.remaining}주</div>
+                          </div>
+                          <div className="holding-right">
+                            <div className="holding-value">
+                              {h.priceError ? <span style={{ color: 'var(--fg-muted)' }}>— —</span> : fmtKRWFull(val)}
+                            </div>
+                            <div className={`holding-return ${ret === null ? 'ret-neu' : ret >= 0 ? 'ret-pos' : 'ret-neg'}`}>
+                              {ret === null ? '—' : `${ret > 0 ? '▲' : ret < 0 ? '▼' : ''}${Math.abs(ret).toFixed(1)}%`}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                }
+              </div>
+            </div>
+
+            {/* Right column: sells + alerts */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Actionable alerts */}
+              {activeAlerts.length > 0 && (
+                <div className="section-card" style={{ border: '1px solid rgba(255,107,53,0.3)' }}>
+                  <div className="section-header" style={{ background: 'rgba(255,107,53,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange-500)" strokeWidth="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      <span className="section-title" style={{ color: 'var(--color-orange-500)' }}>매도 가능 전략</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--color-orange-500)', fontWeight: 600, background: 'rgba(255,107,53,0.12)', padding: '2px 8px', borderRadius: 5 }}>
+                      {activeAlerts.length}건
+                    </span>
+                  </div>
+                  <div className="section-body">
+                    {activeAlerts.map((a, i) => (
+                      <div key={i} className="alert-row">
+                        <div className="alert-dot" />
+                        <div className="alert-text">
+                          <strong>{a.stock}</strong> <span>· {a.note}</span>
+                        </div>
+                        <div className="alert-return">{a.target}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent sells */}
+              <div className="section-card">
+                <div className="section-header">
+                  <span className="section-title">최근 매도 내역</span>
+                  <span className="section-link">전체 보기 →</span>
+                </div>
+                <div className="section-body">
+                  {loading
+                    ? [0,1,2].map(i => (
+                        <div key={i} className="sell-row">
+                          <div className="skel" style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0 }} />
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                            <div className="skel" style={{ height: 13, width: 90 }} />
+                            <div className="skel" style={{ height: 11, width: 120 }} />
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                            <div className="skel" style={{ height: 13, width: 70 }} />
+                            <div className="skel" style={{ height: 11, width: 50 }} />
+                          </div>
+                        </div>
+                      ))
+                    : RECENT_SELLS.map(s => (
+                        <div key={s.id} className="sell-row">
+                          <div className="sell-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                              <polyline points="17 6 23 6 23 12"/>
+                            </svg>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="sell-name">{s.stock}</div>
+                            <div className="sell-meta">{s.qty}주 매도 · {s.ticker}</div>
+                          </div>
+                          <div className="sell-right">
+                            <div className="sell-amount" style={{ color: s.realizedProfit >= 0 ? 'var(--color-green-600)' : 'var(--color-red-600)' }}>
+                              {s.realizedProfit >= 0 ? '+' : ''}{fmtKRW(Math.abs(s.realizedProfit))}
+                            </div>
+                            <div className="sell-date">{fmtDate(s.date)}</div>
+                          </div>
+                        </div>
+                      ))
+                  }
+                </div>
+              </div>
+
+              {/* Exchange rate */}
+              <div className="section-card">
+                <div className="section-header">
+                  <span className="section-title">환율 정보</span>
+                  <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>ExchangeRate-API</span>
+                </div>
+                <div className="fx-row">
+                  <div>
+                    <div className="fx-pair">USD / KRW</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+                      <div className="fx-value">{USD_KRW.toLocaleString()}</div>
+                      <div className="fx-change" style={{ color: 'var(--color-red-500)' }}>▲ +3.5</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="fx-pair">미국 자산 환산</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, marginTop: 4, color: 'var(--fg-secondary)' }}>
+                      $1 = ₩{USD_KRW.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="fx-meta">2025.05.01 09:00 기준 · 1시간 캐시</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <TweaksPanel tweaks={tweaks} setTweak={setTweak}>
+        <TweakSection title="표시">
+          <TweakToggle id="showKPI" label="KPI 카드 표시" tweaks={tweaks} setTweak={setTweak} />
+        </TweakSection>
+        <TweakSection title="상태 시뮬레이션">
+          <TweakToggle id="simulateLoading" label="로딩 중" tweaks={tweaks} setTweak={setTweak} />
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
