@@ -76,4 +76,18 @@ export class ExchangeRatesService {
     const rate = await this.getUsdToKrw();
     return { rate, fetchedAt: new Date() };
   }
+
+  async getRateByDate(date: string): Promise<{ rate: number; source: 'db' | 'current' }> {
+    const result = await this.rateRepo
+      .createQueryBuilder('er')
+      .where('er.from_currency = :from AND er.to_currency = :to', { from: 'USD', to: 'KRW' })
+      .andWhere("DATE(er.fetched_at AT TIME ZONE 'Asia/Seoul') = :date", { date })
+      .orderBy('er.fetched_at', 'DESC')
+      .getOne();
+
+    if (result) return { rate: parseFloat(result.rate as any), source: 'db' };
+
+    const rate = await this.getUsdToKrw();
+    return { rate, source: 'current' };
+  }
 }

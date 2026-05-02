@@ -54,10 +54,15 @@ export class LotsService {
       dto.market as Market,
     );
 
-    const exchangeRateAtPurchase =
-      stock.currency === Currency.USD
-        ? await this.exchangeRatesService.getUsdToKrw()
-        : null;
+    let exchangeRateAtPurchase: number | null = null;
+    if (stock.currency === Currency.USD) {
+      if (dto.exchangeRateAtPurchase) {
+        exchangeRateAtPurchase = dto.exchangeRateAtPurchase;
+      } else {
+        const { rate } = await this.exchangeRatesService.getRateByDate(dto.purchaseDate);
+        exchangeRateAtPurchase = rate;
+      }
+    }
 
     const lot = this.lotRepo.create({
       user: { id: userId },

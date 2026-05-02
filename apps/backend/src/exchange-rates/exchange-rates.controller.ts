@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ExchangeRatesService } from './exchange-rates.service';
 
@@ -11,5 +11,11 @@ export class ExchangeRatesController {
   async getCurrent() {
     const { rate, fetchedAt } = await this.exchangeRatesService.getCurrentRate();
     return { usdToKrw: rate, fetchedAt };
+  }
+
+  @Get('by-date')
+  async getByDate(@Query('date') date: string) {
+    const { rate, source } = await this.exchangeRatesService.getRateByDate(date);
+    return { usdToKrw: rate, source };
   }
 }

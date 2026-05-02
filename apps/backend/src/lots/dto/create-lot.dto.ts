@@ -6,8 +6,10 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  Min,
   MinLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Market } from '../../stocks/stock.entity';
 
 export class CreateLotDto {
@@ -31,6 +33,12 @@ export class CreateLotDto {
   @IsNumber()
   @IsPositive()
   quantity: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  exchangeRateAtPurchase?: number;
 
   @IsOptional()
   @IsString()
