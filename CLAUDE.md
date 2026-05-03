@@ -308,16 +308,14 @@
 - [ ] 로그아웃 시 DB에서 refreshToken 삭제
 - [ ] 30일 미사용 또는 로그아웃 시 자동 로그인 해제
 
-#### 2. 환율 테이블 재설계 + 배치 (현재 구조 교체)
-- [ ] 테이블: `exchange_rates` 재설계
+#### 2. 환율 테이블 재설계 + 배치 ✅ 완료
+- [x] 테이블: `exchange_rates` 재설계 완료
   - `id`, `date` (unique, DATE), `usd_to_krw`, `created_at`
   - 날짜 기준 1개만 존재 (unique constraint)
   - 수동 수정 시 덮어쓰기 허용
-- [ ] 날짜 기준 조회 로직:
-  - 해당 날짜 있으면 사용
-  - 없으면 가장 가까운 이전 날짜 fallback
-- [ ] Cron 배치: 매일 00:05 오늘 환율 insert (이미 있으면 skip)
-- [ ] **핵심**: 이 구조 없으면 과거 Lot 수익률 계산 틀어짐
+- [x] 날짜 기준 조회 로직 구현 완료 (fallback 포함)
+- [x] Cron 배치: 매일 00:05 오늘 환율 insert (이미 있으면 skip)
+- [x] 과거 환율 데이터 삽입 완료 (엑셀 파일 직접 등록)
 
 #### 3. 관리자 페이지
 - [ ] `users` 테이블에 `role` 컬럼 추가 (`'user'` | `'admin'`, default `'user'`)
@@ -364,11 +362,12 @@
   find /home/server/backups/ -mtime +7 -delete
   ```
 
-#### 8. CSV / Excel 다운로드
-- [ ] Lot 목록 CSV export (전체 / 종목별)
-- [ ] SellHistory CSV export (기간 필터 포함)
-- [ ] 백엔드 `GET /lots/export`, `GET /sell-histories/export`
-- [ ] 프론트 다운로드 버튼 (포트폴리오, 매도 히스토리 페이지)
+#### 8. CSV / Excel 다운로드 ✅ 완료
+- [x] Lot 목록 CSV export (전체 / 종목별)
+- [x] SellHistory CSV export (기간 필터 포함)
+- [x] 백엔드 `GET /lots/export`, `GET /sell-histories/export`
+- [x] 프론트 다운로드 버튼 (포트폴리오, 매도 히스토리 페이지)
+- [x] 운영 서버 배포 완료
 
 #### 9. 공지사항
 - [ ] `notices` 테이블: `id`, `title`, `content`, `is_active`, `created_by`, `created_at`
